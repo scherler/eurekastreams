@@ -136,7 +136,7 @@
         <build.gwt.compile.style>PRETTY</build.gwt.compile.style>
         <build.gadget.container.name>eureka</build.gadget.container.name>
         <build.gadget.container.protocol>http://</build.gadget.container.protocol>
-        <build.gadget.shindig.version>2.0.1.2</build.gadget.shindig.version>
+        <build.gadget.shindig.version>2.0.1.1</build.gadget.shindig.version>
         <build.analytics.hostname>http://analytics.example.com</build.analytics.hostname>
         <build.analytics.siteid>-1</build.analytics.siteid>
         <build.email.smtphost>smtp.example.com</build.email.smtphost>
@@ -194,7 +194,7 @@
                     <memmax>2048m</memmax>
                 </configuration>
             </plugin>
-			<plugin>
+			<!--plugin>
                <groupId>org.apache.maven.plugins</groupId>
                <artifactId>maven-checkstyle-plugin</artifactId>
                <version>2.4</version>
@@ -211,7 +211,7 @@
                  </goals>
                	</execution>
                </executions>
-           </plugin>
+           </plugin-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>

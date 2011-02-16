@@ -290,7 +290,10 @@
         <dependency>
             <groupId>org.codehaus.spring-security-oauth</groupId>
             <artifactId>spring-security-oauth</artifactId>
-            <version>3.19-ES</version>
+            <!-- They patched spring-security-oaut but did not published it
+hhttp://groups.google.com/group/eureka-streams-dev/browse_thread/thread/49beec051b7cf8fb
+<version>3.19-ES</version>-->
+<version>3.19</version>
         </dependency>
 		<dependency>
 			<groupId>org.springframework.ldap</groupId>

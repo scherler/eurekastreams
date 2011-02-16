@@ -12,6 +12,9 @@ logdir=$HOME/logs
 tempdbname=$1
 tempdbuser=$2
 tempdevhost=$3
+dbname="eurekastreams"
+dbuser="eurekastreams"
+baseurl="http://localhost:8080"
 
 function WriteLog {
 	# Log file rolls over daily
@@ -32,11 +35,28 @@ function WriteLog {
 }
 
 function main {
-if [[ ! "$exepath" =~ 'scripts$' ]]
+if [[ ! $exepath =~ .*scripts$ ]]
 then
 	WriteLog "[ERROR]:  This script must be executed from within the directory where the scripts reside."
 	exit 1
 fi
+
+if [ -z $tempdbname ]
+then
+    tempdbname=$dbname
+fi
+
+if [ -z $tempdbuser ]
+then
+    tempdbuser=$dbuser
+fi
+
+if [ -z $tempdevhost ]
+then
+    tempdevhost=$baseurl
+fi
+
+WriteLog "[INFO]:  tempdbname=" $tempdbname " tempdbuser=" $tempdbuser " tempdevhost=" $tempdevhost
 
 if [[ ! "$exepath" =~ 'target' ]]
 then

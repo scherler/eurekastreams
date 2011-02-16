@@ -74,7 +74,7 @@ else
 fi
 
 
-if [[ ! "$exepath" =~ 'scripts$' ]]
+if [[ ! $exepath =~ .*scripts$ ]]
 then
         WriteLog "[ERROR] This script must be executed from within the directory where the scripts reside."
         exit 1
@@ -152,7 +152,7 @@ function ApplyBase ()
                         # Change the application URL
                         sed -i "s,http://localhost:8080,$appurl,g" $fullscript\_create.sql
                         WriteLog "[INFO] Executing $dbscript to initialize the database."
-                        mycommand=`psql -h $dbhost -d postgres -f $fullscript\_create.sql 2>&1 1>/dev/null`
+                        mycommand=`psql -h $dbhost -d postgres -U postgres -f $fullscript\_create.sql 2>&1 1>/dev/null`
                         WriteLog "[DEBUG] Output from execution: $mycommand"
                         if [[ ! `echo $?` == 0 ]]
                         then
@@ -182,7 +182,7 @@ function main ()
 {
         WriteLog "[INFO] ===== Updates Script Starting====="
         # Get the current database version components.  If it doesn't exist, suppress the error.  It will be handled in the subsequent if
-        currver=`psql -h $dbhost -d $dbname -t -c 'select major, minor, patch from db_version order by major desc, minor desc, patch desc limit 1;' 2> /dev/null`
+        currver=`psql -h $dbhost -d $dbname -U $dbuser -t -c 'select major, minor, patch from db_version order by major desc, minor desc, patch desc limit 1;' 2> /dev/null`
         # Set startingversion so that we know how far to back out if there's a failure.
         if [[ $currver != "" ]]
         then
