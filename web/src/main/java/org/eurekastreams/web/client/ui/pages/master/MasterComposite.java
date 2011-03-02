@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010 Lockheed Martin Corporation
+ * Copyright (c) 2009-2011 Lockheed Martin Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,9 @@ import java.util.List;
 import org.eurekastreams.commons.client.ActionProcessor;
 import org.eurekastreams.server.domain.AvatarUrlGenerator;
 import org.eurekastreams.server.domain.Page;
-import org.eurekastreams.server.domain.Person;
+import org.eurekastreams.server.domain.SystemSettings;
 import org.eurekastreams.server.domain.TutorialVideoDTO;
+import org.eurekastreams.server.search.modelview.PersonModelView;
 import org.eurekastreams.web.client.events.GetTutorialVideoResponseEvent;
 import org.eurekastreams.web.client.events.Observer;
 import org.eurekastreams.web.client.events.SetBannerEvent;
@@ -128,7 +129,7 @@ public class MasterComposite extends Composite
 
     /**
      * Default constructor.
-     *
+     * 
      */
     public MasterComposite()
     {
@@ -161,7 +162,7 @@ public class MasterComposite extends Composite
         panel.add(mainContents);
 
         initWidget(panel);
-        
+
         Session.getInstance().getEventBus().addObserver(GetTutorialVideoResponseEvent.class,
                 new Observer<GetTutorialVideoResponseEvent>()
                 {
@@ -186,8 +187,7 @@ public class MasterComposite extends Composite
                                 if (!(Session.getInstance().getCurrentPerson().getOptOutVideos().contains(vid
                                         .getEntityId())))
                                 {
-                                    OptOutableVideoDialogContent dialogContent =
-                                            new OptOutableVideoDialogContent(vid);
+                                    OptOutableVideoDialogContent dialogContent = new OptOutableVideoDialogContent(vid);
                                     dialog = new Dialog(dialogContent);
                                     dialog.addCloseButtonListener(dialogContent.closeDialog());
                                     dialog.setBgVisible(true);
@@ -240,15 +240,15 @@ public class MasterComposite extends Composite
             {
                 mainContents.insert(banner, 1);
 
-                //Banner exists and should override the banner the theme is supplying. (i.e. profile page.)
+                // Banner exists and should override the banner the theme is supplying. (i.e. profile page.)
                 if (event.getBannerableEntity() != null)
                 {
                     AvatarUrlGenerator urlGen = new AvatarUrlGenerator(null);
-                    new WidgetJSNIFacadeImpl().setBanner(urlGen
-                            .getBannerUrl(event.getBannerableEntity().getBannerId()));
+                    new WidgetJSNIFacadeImpl()
+                            .setBanner(urlGen.getBannerUrl(event.getBannerableEntity().getBannerId()));
                 }
-                //Start page, the bannerable entity is null, just clear out the banner value
-                //to let the theme take over again.
+                // Start page, the bannerable entity is null, just clear out the banner value
+                // to let the theme take over again.
                 else
                 {
                     new WidgetJSNIFacadeImpl().clearBanner(false);
@@ -260,7 +260,7 @@ public class MasterComposite extends Composite
 
     /**
      * Get the user agent (for detecting IE7).
-     *
+     * 
      * @return the user agent.
      */
     public static native String getUserAgent()
@@ -270,11 +270,11 @@ public class MasterComposite extends Composite
 
     /**
      * Render header and footer.
-     *
+     * 
      */
     public void renderHeaderAndFooter()
     {
-        Person person = Session.getInstance().getCurrentPerson();
+        PersonModelView person = Session.getInstance().getCurrentPerson();
 
         headerPanel.clear();
         headerPanel.add(getHeaderComposite(person));
@@ -282,12 +282,12 @@ public class MasterComposite extends Composite
 
     /**
      * Get the header composite.
-     *
+     * 
      * @param viewer
      *            the user.
      * @return the header composite.
      */
-    HeaderComposite getHeaderComposite(final Person viewer)
+    HeaderComposite getHeaderComposite(final PersonModelView viewer)
     {
         panel.add(footerPanel);
         header.render(viewer);
@@ -297,8 +297,9 @@ public class MasterComposite extends Composite
                 {
                     public void update(final GotSystemSettingsResponseEvent event)
                     {
-                        header.setSiteLabel(event.getResponse().getSiteLabel());
-                        footerPanel.setSiteLabel(event.getResponse().getSiteLabel());
+                        final SystemSettings settings = event.getResponse();
+                        header.setSiteLabelTemplate(settings.getHeaderTemplate(), settings.getSiteLabel());
+                        footerPanel.setSiteLabelTemplate(settings.getFooterTemplate(), settings.getSiteLabel());
                     }
 
                 });

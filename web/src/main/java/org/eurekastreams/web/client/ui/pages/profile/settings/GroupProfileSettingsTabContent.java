@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010 Lockheed Martin Corporation
+ * Copyright (c) 2010-2011 Lockheed Martin Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +16,21 @@
 package org.eurekastreams.web.client.ui.pages.profile.settings;
 
 import java.io.Serializable;
-import java.util.Set;
 
 import org.eurekastreams.commons.client.ActionRequestImpl;
 import org.eurekastreams.server.domain.DomainFormatUtility;
 import org.eurekastreams.server.domain.DomainGroup;
-import org.eurekastreams.server.domain.DomainGroupEntity;
 import org.eurekastreams.server.domain.EntityType;
 import org.eurekastreams.server.domain.Page;
-import org.eurekastreams.server.domain.Person;
 import org.eurekastreams.server.search.modelview.DomainGroupModelView;
+import org.eurekastreams.server.search.modelview.OrganizationModelView;
 import org.eurekastreams.web.client.events.EventBus;
 import org.eurekastreams.web.client.events.Observer;
 import org.eurekastreams.web.client.events.SetBannerEvent;
 import org.eurekastreams.web.client.events.ShowNotificationEvent;
 import org.eurekastreams.web.client.events.UpdateHistoryEvent;
 import org.eurekastreams.web.client.events.data.AuthorizeUpdateGroupResponseEvent;
-import org.eurekastreams.web.client.events.data.GotGroupInformationResponseEvent;
+import org.eurekastreams.web.client.events.data.GotGroupModelViewInformationResponseEvent;
 import org.eurekastreams.web.client.events.data.UpdatedGroupResponseEvent;
 import org.eurekastreams.web.client.history.CreateUrlRequest;
 import org.eurekastreams.web.client.jsni.WidgetJSNIFacadeImpl;
@@ -46,7 +44,7 @@ import org.eurekastreams.web.client.ui.common.form.elements.BasicRadioButtonGrou
 import org.eurekastreams.web.client.ui.common.form.elements.BasicTextAreaFormElement;
 import org.eurekastreams.web.client.ui.common.form.elements.BasicTextBoxFormElement;
 import org.eurekastreams.web.client.ui.common.form.elements.OrgLookupFormElement;
-import org.eurekastreams.web.client.ui.common.form.elements.PersonLookupFormElement;
+import org.eurekastreams.web.client.ui.common.form.elements.PersonModelViewLookupFormElement;
 import org.eurekastreams.web.client.ui.common.form.elements.RichTextAreaFormElement;
 import org.eurekastreams.web.client.ui.common.form.elements.ValueOnlyFormElement;
 import org.eurekastreams.web.client.ui.common.form.elements.avatar.AvatarUploadFormElement;
@@ -87,17 +85,17 @@ public class GroupProfileSettingsTabContent extends FlowPanel
     /**
      * The panel.
      */
-    private FlowPanel panel = new FlowPanel();
+    private final FlowPanel panel = new FlowPanel();
 
     /**
      * The delete-group button.
      */
-    private Anchor deleteButton = new Anchor("");
+    private final Anchor deleteButton = new Anchor("");
 
     /**
      * The processing spinner.
      */
-    private Label processingSpinny = new Label("Processing...");
+    private final Label processingSpinny = new Label("Processing...");
 
     /**
      * Default constructor.
@@ -109,10 +107,10 @@ public class GroupProfileSettingsTabContent extends FlowPanel
     {
         this.add(panel);
 
-        EventBus.getInstance().addObserver(GotGroupInformationResponseEvent.class,
-                new Observer<GotGroupInformationResponseEvent>()
+        EventBus.getInstance().addObserver(GotGroupModelViewInformationResponseEvent.class,
+                new Observer<GotGroupModelViewInformationResponseEvent>()
                 {
-                    public void update(final GotGroupInformationResponseEvent event)
+                    public void update(final GotGroupModelViewInformationResponseEvent event)
                     {
                         setEntity(event.getResponse());
                     }
@@ -140,12 +138,10 @@ public class GroupProfileSettingsTabContent extends FlowPanel
      * @param entity
      *            the group whose settings will be changed
      */
-    public void setEntity(final DomainGroupEntity entity)
+    public void setEntity(final DomainGroupModelView entity)
     {
-        DomainGroup group = (DomainGroup) entity;
-
         // Set the banner.
-        Session.getInstance().getEventBus().notifyObservers(new SetBannerEvent(group));
+        Session.getInstance().getEventBus().notifyObservers(new SetBannerEvent(entity));
         RootPanel.get().addStyleName("form-body");
 
         final FormBuilder form = new FormBuilder("", GroupModel.getInstance(), Method.UPDATE);
@@ -162,32 +158,32 @@ public class GroupProfileSettingsTabContent extends FlowPanel
             }
         });
 
-        form.addFormElement(new ValueOnlyFormElement(DomainGroupModelView.ID_KEY, Long.toString(group.getId())));
-        form.addFormElement(new ValueOnlyFormElement(DomainGroupModelView.SHORT_NAME_KEY, group.getShortName()));
+        form.addFormElement(new ValueOnlyFormElement(DomainGroupModelView.ID_KEY, Long.toString(entity.getId())));
+        form.addFormElement(new ValueOnlyFormElement(DomainGroupModelView.SHORT_NAME_KEY, entity.getShortName()));
 
         AvatarUploadFormElement avatarFormEl = new AvatarUploadFormElement("Avatar",
                 "Select a JPG, PNG or GIF image from your computer. The maxium file size is 4MB"
                         + " and will be cropped to 990 x 100 pixels high.",
-                "/eurekastreams/groupavatarupload?groupName=" + group.getShortName(), Session.getInstance()
-                        .getActionProcessor(), new AvatarUploadStrategy<DomainGroup>(group, "resizeGroupAvatar",
-                        EntityType.GROUP));
+                "/eurekastreams/groupavatarupload?groupName=" + entity.getShortName(), Session.getInstance()
+                        .getActionProcessor(), new AvatarUploadStrategy<DomainGroupModelView>(entity,
+                        "resizeGroupAvatar", EntityType.GROUP));
         form.addWidget(avatarFormEl);
 
         form.addFormDivider();
 
         form.addFormElement(new BasicTextBoxFormElement(MAX_NAME, false, "Group Name", DomainGroupModelView.NAME_KEY,
-                group.getName(), "", true));
+                entity.getName(), "", true));
         form.addFormDivider();
 
         form.addFormElement(new BasicTextAreaFormElement(DomainGroup.MAX_DESCRIPTION_LENGTH, "Description",
-                DomainGroupModelView.DESCRIPTION_KEY, group.getDescription(),
+                DomainGroupModelView.DESCRIPTION_KEY, entity.getDescription(),
                 "Enter a few sentences that describe the purpose of your group's stream.  "
                         + "This description will appear beneath your avatar "
                         + "and in the profile search results pages.", false));
 
         form.addFormDivider();
 
-        form.addFormElement(new RichTextAreaFormElement("Overview", DomainGroupModelView.OVERVIEW_KEY, group
+        form.addFormElement(new RichTextAreaFormElement("Overview", DomainGroupModelView.OVERVIEW_KEY, entity
                 .getOverview(), "Enter an overview of your group.  This description will appear under the About tab.",
                 TEXT_EDITOR_WIDTH, false));
         HTML html = new HTML("<strong>Tip:</strong> Include more detailed information about your group, "
@@ -201,8 +197,8 @@ public class GroupProfileSettingsTabContent extends FlowPanel
         form.addFormDivider();
 
         AutoCompleteItemDropDownFormElement keywords = new AutoCompleteItemDropDownFormElement("Keywords",
-                DomainGroupModelView.KEYWORDS_KEY,
-                DomainFormatUtility.buildCapabilitiesString(group.getCapabilities()),
+                DomainGroupModelView.KEYWORDS_KEY, DomainFormatUtility.buildCapabilitiesStringFromStrings(entity
+                        .getCapabilities()),
                 "Add keywords that describe your group and the topics your members will be talking about. Separate "
                         + "keywords with a comma. Including keywords helps others find your group when searching "
                         + "profiles.", false, "/resources/autocomplete/capability/", "itemNames", ",");
@@ -211,22 +207,27 @@ public class GroupProfileSettingsTabContent extends FlowPanel
         form.addFormElement(keywords);
         form.addFormDivider();
 
-        form.addFormElement(new BasicTextBoxFormElement("Website URL", "url", group.getUrl(),
+        form.addFormElement(new BasicTextBoxFormElement("Website URL", "url", entity.getUrl(),
                 "If your group has a website, you can enter the URL above", false));
         form.addFormDivider();
 
+        // create OrgModelView from groupParentOrg
+        OrganizationModelView parentOrgModelView = null;
+        parentOrgModelView = new OrganizationModelView();
+        parentOrgModelView.setName(entity.getParentOrganizationName());
+        parentOrgModelView.setShortName(entity.getParentOrganizationShortName());
+        parentOrgModelView.setEntityId(entity.getParentOrganizationId());
+
         form.addFormElement(new OrgLookupFormElement("Parent Organization", "",
                 "Please use the lookup to select the organization that this group is associated with.",
-                DomainGroupModelView.ORG_PARENT_KEY, "", true, Session.getInstance().getActionProcessor(), group
-                        .getParentOrganization(), false));
+                DomainGroupModelView.ORG_PARENT_KEY, "", true, parentOrgModelView, false));
         form.addFormDivider();
 
         String coordinstructions = "The group coordinators will be responsible for managing the organization profile, "
                 + "and moderating the group's activity stream";
-        Set<Person> coordinatorList = group.getCoordinators();
-        form.addFormElement(new PersonLookupFormElement("Group Coordinators", "Add Coordinator", coordinstructions,
-                DomainGroupModelView.COORDINATORS_KEY, coordinatorList, true, Session.getInstance()
-                        .getActionProcessor()));
+
+        form.addFormElement(new PersonModelViewLookupFormElement("Group Coordinators", "Add Coordinator",
+                coordinstructions, DomainGroupModelView.COORDINATORS_KEY, entity.getCoordinators(), true));
 
         form.addFormDivider();
 
@@ -234,8 +235,8 @@ public class GroupProfileSettingsTabContent extends FlowPanel
                 "Select a JPG, PNG or GIF image from your computer. "
                         + "The maximum file size is 4MB and will be cropped to 120 pixels high.",
                 "/eurekastreams/bannerupload?type=DomainGroup&entityName=" + entity.getShortName(), Session
-                        .getInstance().getActionProcessor(), new BannerUploadStrategy<DomainGroup>(
-                        (DomainGroup) entity, entity.getId()));
+                        .getInstance().getActionProcessor(), new BannerUploadStrategy<DomainGroupModelView>(entity,
+                        entity.getId()));
         form.addWidget(avatarBanner);
 
         form.addFormDivider();
@@ -245,10 +246,10 @@ public class GroupProfileSettingsTabContent extends FlowPanel
         currentPrivacySettingLabel.addStyleName("form-label");
         final FlowPanel currentPrivacySettingDescription = new FlowPanel();
         final Label currentPrivacySettingDescriptionTitle = new Label();
-        currentPrivacySettingDescriptionTitle.setText(group.isPublicGroup() ? "Public" : "Private");
+        currentPrivacySettingDescriptionTitle.setText(entity.isPublic() ? "Public" : "Private");
         currentPrivacySettingDescriptionTitle.addStyleName("form-static-value");
         final Label currentPrivacySettingDescriptionInfo = new Label();
-        if (group.isPublicGroup())
+        if (entity.isPublic())
         {
             currentPrivacySettingDescriptionInfo.setText("Public groups are visible to all users and accessible "
                     + "through a profile search.");
@@ -270,7 +271,7 @@ public class GroupProfileSettingsTabContent extends FlowPanel
         currentPrivacySettingPanel.add(currentPrivacySettingDescription);
         form.addWidget(currentPrivacySettingPanel);
 
-        if (!group.isPublicGroup())
+        if (!entity.isPublic())
         {
             final HTML privateNote = new HTML("<span class=\"form-static-value\">Please Note:</span> "
                     + "This group's name and description will be visible whenever employees browse or"
@@ -283,11 +284,11 @@ public class GroupProfileSettingsTabContent extends FlowPanel
 
         // TODO: evidently this is supposed to go away
         BasicCheckBoxFormElement blockWallPost = new BasicCheckBoxFormElement("Stream Moderation",
-                DomainGroupModelView.STREAM_POSTABLE_KEY, "Allow others to post to your group's stream", false, group
+                DomainGroupModelView.STREAM_POSTABLE_KEY, "Allow others to post to your group's stream", false, entity
                         .isStreamPostable());
         BasicCheckBoxFormElement blockCommentPost = new BasicCheckBoxFormElement(null,
                 DomainGroupModelView.STREAM_COMMENTABLE_KEY,
-                "Allow others to comment on activity in your group's stream", false, group.isCommentable());
+                "Allow others to comment on activity in your group's stream", false, entity.isCommentable());
 
         blockWallPost.addStyleName("stream-moderation");
         blockCommentPost.addStyleName("stream-moderation");
@@ -304,7 +305,7 @@ public class GroupProfileSettingsTabContent extends FlowPanel
                 "Allow group members to receive emails and in-app notifications when activity is posted "
                         + "to this group",
                 "Eureka Streams will notify group members and coordinators when new activity has taken place "
-                        + "in this group", false, !group.isSuppressPostNotifToMember());
+                        + "in this group", false, !entity.isSuppressPostNotifToMember());
         noMemberPostNotif.setReverseValue(true);
         noMemberPostNotif.addStyleName("group-notif-suppress");
         form.addFormElement(noMemberPostNotif);
@@ -312,7 +313,7 @@ public class GroupProfileSettingsTabContent extends FlowPanel
         BasicCheckBoxFormElement noCoordPostNotif = new BasicCheckBoxFormElement(null,
                 DomainGroupModelView.SUPPRESS_POST_NOTIF_TO_COORDINATOR_KEY,
                 "Allow group coordinators to receive emails and in-app notifications when activity is posted "
-                        + "to this group", false, !group.isSuppressPostNotifToCoordinator());
+                        + "to this group", false, !entity.isSuppressPostNotifToCoordinator());
         noCoordPostNotif.setReverseValue(true);
         noCoordPostNotif.addStyleName("group-notif-suppress");
         form.addFormElement(noCoordPostNotif);
@@ -352,7 +353,7 @@ public class GroupProfileSettingsTabContent extends FlowPanel
                                     // navigates away from settings page to the parent org profile page
                                     Session.getInstance().getEventBus().notifyObservers(
                                             new UpdateHistoryEvent(new CreateUrlRequest(Page.ORGANIZATIONS, entity
-                                                    .getParentOrganization().getShortName())));
+                                                    .getParentOrganizationShortName())));
                                 }
 
                                 public void onFailure(final Throwable caught)

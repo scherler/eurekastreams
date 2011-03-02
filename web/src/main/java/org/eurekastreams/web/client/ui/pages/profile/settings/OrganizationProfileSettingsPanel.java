@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010 Lockheed Martin Corporation
+ * Copyright (c) 2009-2011 Lockheed Martin Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.eurekastreams.web.client.ui.pages.profile.settings;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import org.eurekastreams.commons.client.ActionProcessor;
@@ -22,16 +23,15 @@ import org.eurekastreams.commons.client.ActionRequestImpl;
 import org.eurekastreams.server.domain.EntityType;
 import org.eurekastreams.server.domain.Organization;
 import org.eurekastreams.server.domain.Page;
-import org.eurekastreams.server.domain.Person;
 import org.eurekastreams.server.search.modelview.OrganizationModelView;
+import org.eurekastreams.server.search.modelview.PersonModelView;
 import org.eurekastreams.server.search.modelview.PersonModelView.Role;
 import org.eurekastreams.web.client.events.EventBus;
 import org.eurekastreams.web.client.events.Observer;
 import org.eurekastreams.web.client.events.ShowNotificationEvent;
 import org.eurekastreams.web.client.events.UpdateHistoryEvent;
-import org.eurekastreams.web.client.events.data.AuthorizeUpdateGroupResponseEvent;
 import org.eurekastreams.web.client.events.data.AuthorizeUpdateOrganizationResponseEvent;
-import org.eurekastreams.web.client.events.data.GotOrganizationInformationResponseEvent;
+import org.eurekastreams.web.client.events.data.GotOrganizationModelViewInformationResponseEvent;
 import org.eurekastreams.web.client.events.data.UpdatedOrganizationResponseEvent;
 import org.eurekastreams.web.client.history.CreateUrlRequest;
 import org.eurekastreams.web.client.jsni.WidgetJSNIFacadeImpl;
@@ -43,7 +43,7 @@ import org.eurekastreams.web.client.ui.common.form.FormBuilder.Method;
 import org.eurekastreams.web.client.ui.common.form.elements.BasicCheckBoxFormElement;
 import org.eurekastreams.web.client.ui.common.form.elements.BasicTextAreaFormElement;
 import org.eurekastreams.web.client.ui.common.form.elements.BasicTextBoxFormElement;
-import org.eurekastreams.web.client.ui.common.form.elements.PersonLookupFormElement;
+import org.eurekastreams.web.client.ui.common.form.elements.PersonModelViewLookupFormElement;
 import org.eurekastreams.web.client.ui.common.form.elements.ValueOnlyFormElement;
 import org.eurekastreams.web.client.ui.common.form.elements.avatar.AvatarUploadFormElement;
 import org.eurekastreams.web.client.ui.common.form.elements.avatar.strategies.AvatarUploadStrategy;
@@ -76,12 +76,12 @@ public class OrganizationProfileSettingsPanel extends SettingsPanel
     /**
      * The delete-group button.
      */
-    private Anchor deleteButton = new Anchor("");
+    private final Anchor deleteButton = new Anchor("");
 
     /**
      * The processing spinner.
      */
-    private Label processingSpinny = new Label("Processing...");
+    private final Label processingSpinny = new Label("Processing...");
 
     /**
      * Default constructor.
@@ -99,19 +99,19 @@ public class OrganizationProfileSettingsPanel extends SettingsPanel
 
         panel.addStyleName("org-profile-settings-panel");
 
-        EventBus.getInstance().addObserver(GotOrganizationInformationResponseEvent.class,
-                new Observer<GotOrganizationInformationResponseEvent>()
+        EventBus.getInstance().addObserver(GotOrganizationModelViewInformationResponseEvent.class,
+                new Observer<GotOrganizationModelViewInformationResponseEvent>()
                 {
-                    public void update(final GotOrganizationInformationResponseEvent event)
+                    public void update(final GotOrganizationModelViewInformationResponseEvent event)
                     {
                         setEntity(event.getResponse());
                     }
                 });
 
         Session.getInstance().getEventBus().addObserver(AuthorizeUpdateOrganizationResponseEvent.class,
-                new Observer<AuthorizeUpdateGroupResponseEvent>()
+                new Observer<AuthorizeUpdateOrganizationResponseEvent>()
                 {
-                    public void update(final AuthorizeUpdateGroupResponseEvent event)
+                    public void update(final AuthorizeUpdateOrganizationResponseEvent event)
                     {
                         if (event.getResponse())
                         {
@@ -129,7 +129,7 @@ public class OrganizationProfileSettingsPanel extends SettingsPanel
      * @param entity
      *            the organization whose settings will be changed
      */
-    public void setEntity(final Organization entity)
+    public void setEntity(final OrganizationModelView entity)
     {
         ActionProcessor processor = Session.getInstance().getActionProcessor();
         RootPanel.get().addStyleName("form-body");
@@ -159,7 +159,7 @@ public class OrganizationProfileSettingsPanel extends SettingsPanel
         form.addWidget(new AvatarUploadFormElement("Avatar",
                 "Select a JPG, PNG or GIF image from your computer. The maxium file size is 4MB"
                         + " and will be cropped to 990 x 100 pixels high.", "/eurekastreams/orgavatarupload?orgName="
-                        + entity.getShortName(), processor, new AvatarUploadStrategy<Organization>(entity,
+                        + entity.getShortName(), processor, new AvatarUploadStrategy<OrganizationModelView>(entity,
                         "resizeOrgAvatar", EntityType.ORGANIZATION)));
 
         form.addFormDivider();
@@ -181,18 +181,19 @@ public class OrganizationProfileSettingsPanel extends SettingsPanel
 
         String leaderinstructions = "Add the organization's leaders "
                 + "in the order you would like them to appear on the profile.";
-        Set<Person> leaderList = entity.getLeaders();
-        leaderList = entity.getLeaders();
-        form.addFormElement(new PersonLookupFormElement("Leadership", "Add Leader", leaderinstructions,
-                OrganizationModelView.LEADERSHIP_KEY, leaderList, false, processor));
+
+        Set<PersonModelView> leaderList = new HashSet<PersonModelView>(entity.getLeaders());
+        form.addFormElement(new PersonModelViewLookupFormElement("Leadership", "Add Leader", leaderinstructions,
+                OrganizationModelView.LEADERSHIP_KEY, leaderList, false));
 
         form.addFormDivider();
 
         String coordinstructions = "The organization coordinators will be responsible "
                 + "for setting up the organization profile, setting org policy " + "and managing adoption campaigns.";
-        Set<Person> coordinatorList = entity.getCoordinators();
-        form.addFormElement(new PersonLookupFormElement("Organization Coordinators", "Add Coordinator",
-                coordinstructions, OrganizationModelView.COORDINATORS_KEY, coordinatorList, true, processor));
+
+        Set<PersonModelView> coordinatorList = new HashSet<PersonModelView>(entity.getCoordinators());
+        form.addFormElement(new PersonModelViewLookupFormElement("Organization Coordinators", "Add Coordinator",
+                coordinstructions, OrganizationModelView.COORDINATORS_KEY, coordinatorList, true));
 
         form.addFormDivider();
 
@@ -200,7 +201,7 @@ public class OrganizationProfileSettingsPanel extends SettingsPanel
                 "Select a JPG, PNG or GIF image from your computer. "
                         + "The maximum file size is 4MB and will be cropped to 120 pixels high.",
                 "/eurekastreams/bannerupload?type=Organization&entityName=" + entity.getShortName(), processor,
-                new BannerUploadStrategy<Organization>(entity, entity.getId()));
+                new BannerUploadStrategy<OrganizationModelView>(entity, entity.getId()));
 
         banner.addStyleName("banner-upload-form-element");
 

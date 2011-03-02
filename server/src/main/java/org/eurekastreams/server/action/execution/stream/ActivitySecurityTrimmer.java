@@ -20,6 +20,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.logging.Log;
+import org.eurekastreams.commons.logging.LogFactory;
 import org.eurekastreams.server.domain.stream.ActivitySecurityDTO;
 import org.eurekastreams.server.persistence.mappers.DomainMapper;
 import org.eurekastreams.server.persistence.mappers.cache.GetPrivateCoordinatedAndFollowedGroupIdsForUser;
@@ -29,6 +31,11 @@ import org.eurekastreams.server.persistence.mappers.cache.GetPrivateCoordinatedA
  */
 public class ActivitySecurityTrimmer
 {
+    /**
+     * Logger.
+     */
+    private Log log = LogFactory.make();
+
     /**
      * Activity filter.
      */
@@ -65,6 +72,7 @@ public class ActivitySecurityTrimmer
      */
     public List<Long> trim(final List<Long> activityIds, final Long userPersonId)
     {
+        log.debug("Trimming " + activityIds.size() + " activity ids for person#" + userPersonId);
         Set<Long> accessibleGroupIds = getVisibleGroupsForUserMapper.execute(userPersonId);
 
         final Collection<ActivitySecurityDTO> securityDTOs = securityMapper.execute(activityIds);
@@ -77,7 +85,12 @@ public class ActivitySecurityTrimmer
                     && (actSec.isDestinationStreamPublic() || accessibleGroupIds.contains(actSec
                             .getDestinationEntityId())))
             {
+                log.debug("Activity with ID permitted: " + actSec.getId());
                 visibleActivities.add(actSec.getId());
+            }
+            else
+            {
+                log.debug("Activity with ID NOT permitted: " + actSec.getId());
             }
         }
 

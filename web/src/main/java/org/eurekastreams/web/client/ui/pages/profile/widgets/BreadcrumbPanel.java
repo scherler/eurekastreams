@@ -22,10 +22,11 @@ import org.eurekastreams.commons.client.ActionProcessor;
 import org.eurekastreams.commons.client.ActionRequestImpl;
 import org.eurekastreams.server.action.request.profile.GetBreadcrumbsListRequest;
 import org.eurekastreams.server.domain.BreadcrumbDTO;
-import org.eurekastreams.server.domain.DomainGroupEntity;
 import org.eurekastreams.server.domain.Organization;
 import org.eurekastreams.server.domain.Page;
-import org.eurekastreams.server.domain.Person;
+import org.eurekastreams.server.search.modelview.DomainGroupModelView;
+import org.eurekastreams.server.search.modelview.OrganizationModelView;
+import org.eurekastreams.server.search.modelview.PersonModelView;
 import org.eurekastreams.web.client.history.CreateUrlRequest;
 import org.eurekastreams.web.client.ui.Session;
 
@@ -46,7 +47,7 @@ public class BreadcrumbPanel extends FlowPanel
 
     /**
      * Constructor.
-     *
+     * 
      * @param inProcessor
      *            the processor to set.
      */
@@ -59,44 +60,100 @@ public class BreadcrumbPanel extends FlowPanel
     /**
      * Specify the Person we're looking at. Set the breadcrumb trail to this person and the parent organization(s).
      * TODO: Change DomainEntity to Entity
-     *
+     * 
      * @param inPerson
      *            the person whose info we are displaying.
      */
-    public void setPerson(final Person inPerson)
+    public void setPerson(final PersonModelView inPerson)
     {
-        buildBreadcrumbs(inPerson.getParentOrganization(), inPerson.getPreferredName() + " " + inPerson.getLastName(),
-                true, false);
+        OrganizationModelView orgMv = new OrganizationModelView();
+        orgMv.setEntityId(inPerson.getParentOrganizationId());
+        orgMv.setShortName(inPerson.getParentOrganizationShortName());
+        orgMv.setName(inPerson.getParentOrganizationName());
+
+        // note: we don't have the parent organization's parent org id, but that's okay because of the 3rd parameter
+        // is set to true, which means the parent org's parent org won't be used
+        buildBreadcrumbs(orgMv, inPerson.getPreferredName() + " " + inPerson.getLastName(), true, false);
     }
 
     /**
      * Specify the Group we're looking at. Set the breadcrumb trail to this group and the parent organization(s).
-     *
+     * 
      * @param inGroup
      *            the inGroup whose info we are displaying.
      * @param showItemLink
      *            flag to show this item in the trail as a link that wipes out all params when clicked.
      */
-    public void setGroup(final DomainGroupEntity inGroup, final boolean showItemLink)
+    public void setGroup(final DomainGroupModelView inGroup, final boolean showItemLink)
     {
-        buildBreadcrumbs(inGroup.getParentOrganization(), inGroup.getName(), true, showItemLink);
+        OrganizationModelView parentOrgModelView = new OrganizationModelView();
+        parentOrgModelView.setName(inGroup.getParentOrganizationName());
+        parentOrgModelView.setEntityId(inGroup.getParentOrganizationId());
+        parentOrgModelView.setShortName(inGroup.getParentOrganizationShortName());
+        buildBreadcrumbs(parentOrgModelView, inGroup.getName(), true, showItemLink);
     }
 
     /**
      * Set up the breadcrumbs based on an organization. Note that we should be able to collapse this and setPerson()
      * once we have the Resource hierarchy.
-     *
+     * 
      * @param inOrganization
      *            the new organization
      */
-    public void setOrganization(final Organization inOrganization)
+    public void setOrganization(final OrganizationModelView inOrganization)
     {
         buildBreadcrumbs(inOrganization, inOrganization.getName(), false, false);
     }
 
     /**
      * Makes the action call to build the breadcrumb list.
-     *
+     * 
+     * @param org
+     *            the organization starting point.
+     * @param thisItem
+     *            the display name of the end node in the breadcrumb trail.
+     * @param showParent
+     *            flag to show this item's direct parent in the trail; only orgs do not need to show this.
+     * @param showItemLink
+     *            flag to show this item in the trail as a link that wipes out all params when clicked.
+     */
+    private void buildBreadcrumbs(final OrganizationModelView org, final String thisItem, final boolean showParent,
+            final boolean showItemLink)
+    {
+        GetBreadcrumbsListRequest request = new GetBreadcrumbsListRequest(org.getId());
+
+        // No need to get the organization hierarchy if the supplied org is the root org
+        // and breadcrumbs are being displayed on an Org profile page.
+        if (!showParent && (org.getParentOrganizationId() == org.getId()))
+        {
+            displayBreadcrumbs(new ArrayList<BreadcrumbDTO>(), thisItem, showParent, showItemLink);
+        }
+        else
+        {
+            processor.makeRequest(new ActionRequestImpl<ArrayList<BreadcrumbDTO>>("getBreadcrumbsList", request),
+                    new AsyncCallback<ArrayList<BreadcrumbDTO>>()
+                    {
+                        public void onFailure(final Throwable caught)
+                        {
+                        }
+
+                        public void onSuccess(final ArrayList<BreadcrumbDTO> breadcrumbs)
+                        {
+                            // Don't show the parent if your parent is the root org.
+                            if (showParent)
+                            {
+                                breadcrumbs
+                                        .add(new BreadcrumbDTO(org.getName(), Page.ORGANIZATIONS, org.getShortName()));
+                            }
+                            displayBreadcrumbs(breadcrumbs, thisItem, showParent, showItemLink);
+                        }
+                    });
+        }
+    }
+
+    /**
+     * Makes the action call to build the breadcrumb list.
+     * 
      * @param org
      *            the organization starting point.
      * @param thisItem
@@ -142,7 +199,7 @@ public class BreadcrumbPanel extends FlowPanel
 
     /**
      * Put the breadcrumbs on the display.
-     *
+     * 
      * @param breadcrumbs
      *            the crumbs.
      * @param thisItem
@@ -161,7 +218,7 @@ public class BreadcrumbPanel extends FlowPanel
 
         HashMap<String, String> params = new HashMap<String, String>();
         params.put("tab", "Stream");
-        
+
         for (BreadcrumbDTO crumb : breadcrumbs)
         {
             Hyperlink crumbLink = new Hyperlink(crumb.getText(), Session.getInstance().generateUrl(

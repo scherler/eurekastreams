@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010 Lockheed Martin Corporation
+ * Copyright (c) 2009-2011 Lockheed Martin Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import java.util.ArrayList;
 
 import org.eurekastreams.server.domain.MembershipCriteria;
 import org.eurekastreams.server.domain.Page;
-import org.eurekastreams.server.domain.Person;
 import org.eurekastreams.server.domain.SystemSettings;
+import org.eurekastreams.server.search.modelview.PersonModelView;
 import org.eurekastreams.web.client.events.Observer;
 import org.eurekastreams.web.client.events.UpdateHistoryEvent;
 import org.eurekastreams.web.client.events.data.InsertedRootOrganizationResponseEvent;
@@ -100,11 +100,11 @@ public class SystemSetupPanel extends FlowPanel
         Label step3 = form.addFormLabel("");
         step3.addStyleName("step-3");
 
-        final ArrayList<Person> coordinators = new ArrayList<Person>();
+        final ArrayList<PersonModelView> coordinators = new ArrayList<PersonModelView>();
 
         final PersonLookupFormElement personLookup = new PersonLookupFormElement("Define your coordinators",
                 "Add Coordinator", "Identify who will create your organization structure and make policy decisions",
-                "coordinators", coordinators, true, session.getActionProcessor());
+                "coordinators", coordinators, true);
 
         form.addFormElement(personLookup);
 

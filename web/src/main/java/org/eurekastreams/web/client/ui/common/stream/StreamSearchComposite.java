@@ -26,7 +26,6 @@ import org.eurekastreams.web.client.events.Observer;
 import org.eurekastreams.web.client.events.StreamSearchBeginEvent;
 import org.eurekastreams.web.client.events.data.GotStreamResponseEvent;
 import org.eurekastreams.web.client.history.CreateUrlRequest;
-import org.eurekastreams.web.client.ui.Bindable;
 import org.eurekastreams.web.client.ui.Session;
 import org.eurekastreams.web.client.ui.common.LabeledTextBox;
 import org.eurekastreams.web.client.ui.common.dialog.Dialog;
@@ -35,8 +34,8 @@ import org.eurekastreams.web.client.ui.common.stream.filters.list.CustomStreamDi
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.KeyCodes;
-import com.google.gwt.event.dom.client.KeyPressEvent;
-import com.google.gwt.event.dom.client.KeyPressHandler;
+import com.google.gwt.event.dom.client.KeyUpEvent;
+import com.google.gwt.event.dom.client.KeyUpHandler;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Hyperlink;
 import com.google.gwt.user.client.ui.InlineHyperlink;
@@ -46,7 +45,7 @@ import com.google.gwt.user.client.ui.Label;
 /**
  * Stream searching widget.
  */
-public class StreamSearchComposite extends FlowPanel implements Bindable
+public class StreamSearchComposite extends FlowPanel
 {
     /**
      * The search button.
@@ -201,11 +200,12 @@ public class StreamSearchComposite extends FlowPanel implements Bindable
             }
         });
 
-        searchTerm.addKeyPressHandler(new KeyPressHandler()
+        searchTerm.addKeyUpHandler(new KeyUpHandler()
         {
-            public void onKeyPress(final KeyPressEvent event)
+            public void onKeyUp(final KeyUpEvent ev)
             {
-                if (event.getCharCode() == KeyCodes.KEY_ENTER)
+                if (ev.getNativeKeyCode() == KeyCodes.KEY_ENTER && !ev.isAnyModifierKeyDown()
+                        && searchTerm.getText().length() > 0)
                 {
                     onSearch();
                 }
@@ -259,7 +259,10 @@ public class StreamSearchComposite extends FlowPanel implements Bindable
                 params.put("endIndex", null);
                 String url = Session.getInstance().generateUrl(new CreateUrlRequest(params));
 
+                String search = Session.getInstance().getParameterValue("search");
                 String stream = Session.getInstance().getParameterValue("streamId");
+
+                addGadgetLink.setVisible(search == null);
 
                 setAddGadgetLink(titleLbl.getText(), streamUrlTransformer.getUrl(stream, event.getJsonRequest()), url);
             }
@@ -276,7 +279,7 @@ public class StreamSearchComposite extends FlowPanel implements Bindable
 
     /**
      * Update search widget.
-     *
+     * 
      * @param inSearchTerm
      *            the search term.
      */
@@ -302,7 +305,7 @@ public class StreamSearchComposite extends FlowPanel implements Bindable
 
     /**
      * Set the title text, generating a hyperlink for group stream titles.
-     *
+     * 
      * @param title
      *            the text.
      * @param shortName
@@ -334,7 +337,7 @@ public class StreamSearchComposite extends FlowPanel implements Bindable
 
     /**
      * Sets if the search can be changed.
-     *
+     * 
      * @param canChange
      *            if the search can be changed.
      */
@@ -348,7 +351,7 @@ public class StreamSearchComposite extends FlowPanel implements Bindable
 
     /**
      * Builds and sets the link for adding the stream as a gadget.
-     *
+     * 
      * @param gadgetTitle
      *            the gadget title.
      * @param streamQuery
@@ -373,7 +376,7 @@ public class StreamSearchComposite extends FlowPanel implements Bindable
     /**
      * Creates the JSON representation of a string value. (Escapes characters and adds string delimiters or returns null
      * keyword as applicable.) See http://www.json.org/ for syntax. Assumes the string contains no control characters.
-     *
+     * 
      * @param input
      *            Input string, possibly null.
      * @return JSON string representation.
@@ -383,4 +386,3 @@ public class StreamSearchComposite extends FlowPanel implements Bindable
          return input == null ? 'null' : '"' + input.replace(/\\/g,'\\\\').replace(/"/g,'\\"') + '"';
        }-*/;
 }
-

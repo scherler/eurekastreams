@@ -15,6 +15,7 @@
  */
 package org.eurekastreams.web.client.ui.pages.profile.tabs;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -23,7 +24,7 @@ import org.eurekastreams.server.domain.BackgroundItemType;
 import org.eurekastreams.server.domain.Enrollment;
 import org.eurekastreams.server.domain.Job;
 import org.eurekastreams.server.domain.Page;
-import org.eurekastreams.server.domain.Person;
+import org.eurekastreams.server.search.modelview.PersonModelView;
 import org.eurekastreams.web.client.events.Observer;
 import org.eurekastreams.web.client.events.data.GotPersonalEducationResponseEvent;
 import org.eurekastreams.web.client.events.data.GotPersonalEmploymentResponseEvent;
@@ -48,11 +49,11 @@ public class PersonalProfileAboutTabPanel extends ProfileAboutTabPanel
 {
     /**
      * Constructor.
-     *
+     * 
      * @param person
      *            Person whose data to display.
      */
-    public PersonalProfileAboutTabPanel(final Person person)
+    public PersonalProfileAboutTabPanel(final PersonModelView person)
     {
         final HashMap<String, String> workHistoryTabURL = new HashMap<String, String>();
         workHistoryTabURL.put("tab", "Work History & Education");
@@ -108,10 +109,9 @@ public class PersonalProfileAboutTabPanel extends ProfileAboutTabPanel
             }
         }
 
-        List<BackgroundItem> items = person.getBackground() == null ? null : person.getBackground().getBackgroundItems(
-                BackgroundItemType.SKILL);
+        List<String> interests = person.getInterests();
 
-        if (items == null || items.isEmpty())
+        if (interests == null || interests.isEmpty())
         {
             if (currentViewerAccountId == person.getAccountId())
             {
@@ -129,7 +129,15 @@ public class PersonalProfileAboutTabPanel extends ProfileAboutTabPanel
         }
         else
         {
-            interestsPanel.add(new BackgroundItemLinksPanel("interests or hobbies", items));
+            // TODO: keep sending this as a list of background items - will be changed to a list of Strings
+
+            List<BackgroundItem> bgitems = new ArrayList<BackgroundItem>();
+            for (String interest : interests)
+            {
+                bgitems.add(new BackgroundItem(interest, BackgroundItemType.NOT_SET));
+            }
+
+            interestsPanel.add(new BackgroundItemLinksPanel("interests or hobbies", bgitems));
         }
 
         Session.getInstance().getEventBus().addObserver(GotPersonalEmploymentResponseEvent.class,
@@ -207,7 +215,7 @@ public class PersonalProfileAboutTabPanel extends ProfileAboutTabPanel
 
     /**
      * strips html out of String.
-     *
+     * 
      * @param htmlString
      *            the string to strip.
      * @return a stripped string.
@@ -227,7 +235,7 @@ public class PersonalProfileAboutTabPanel extends ProfileAboutTabPanel
     /**
      * Checks if the URL is relative (and thus needs to have http:// added on the front). JSNI due to limited regex
      * support in GWT 1.7.
-     *
+     * 
      * @param href
      *            URL to check.
      * @return True if needs prefix; false if not.

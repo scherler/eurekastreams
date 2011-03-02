@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010 Lockheed Martin Corporation
+ * Copyright (c) 2010-2011 Lockheed Martin Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,11 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Map;
 
+import org.eurekastreams.commons.actions.context.ActionContext;
 import org.eurekastreams.commons.actions.context.Principal;
 import org.eurekastreams.commons.actions.context.PrincipalActionContext;
 import org.eurekastreams.commons.actions.context.TaskHandlerActionContext;
+import org.eurekastreams.commons.actions.context.async.AsyncActionContext;
 import org.eurekastreams.commons.server.UserActionRequest;
 import org.junit.Ignore;
 
@@ -40,9 +42,23 @@ public final class TestContextCreator
     }
 
     /**
+     * Creates a TaskHandlerActionContext<AsyncActionContext> - used for actions invoked asynchronously which can queue
+     * activities.
+     *
+     * @param params
+     *            Action parameters.
+     * @return Context.
+     */
+    public static TaskHandlerActionContext<ActionContext> createTaskHandlerAsyncContext(final Serializable params)
+    {
+        return new TaskHandlerActionContext<ActionContext>(new AsyncActionContext(params),
+                new ArrayList<UserActionRequest>());
+    }
+
+    /**
      * Creates a TaskHandlerActionContext<PrincipalActionContext> - used for actions invoked directly by user action
      * which can queue activities.
-     * 
+     *
      * @param params
      *            Action parameters.
      * @param userAccountId
@@ -61,7 +77,7 @@ public final class TestContextCreator
     /**
      * Creates a TaskHandlerActionContext<PrincipalActionContext> - used for actions invoked directly by user action
      * which can queue activities.
-     * 
+     *
      * @param params
      *            Action parameters.
      * @param principal
@@ -71,7 +87,43 @@ public final class TestContextCreator
     public static TaskHandlerActionContext<PrincipalActionContext> createTaskHandlerContextWithPrincipal(
             final Serializable params, final Principal principal)
     {
-        return new TaskHandlerActionContext<PrincipalActionContext>(new PrincipalActionContext()
+        return new TaskHandlerActionContext<PrincipalActionContext>(createPrincipalActionContext(params, principal),
+                new ArrayList<UserActionRequest>());
+    }
+
+    /**
+     * Creates a PrincipalActionContext - used for actions invoked directly by user action which do not queue
+     * activities.
+     *
+     * @param params
+     *            Action parameters.
+     * @param userAccountId
+     *            User's account ID.
+     * @param userId
+     *            User's person ID.
+     * @return Context.
+     */
+    public static PrincipalActionContext createPrincipalActionContext(final Serializable params,
+            final String userAccountId, final long userId)
+    {
+        final Principal principal = createPrincipal(userAccountId, userId);
+        return createPrincipalActionContext(params, principal);
+    }
+
+    /**
+     * Creates a PrincipalActionContext - used for actions invoked directly by user action which do not queue
+     * activities.
+     *
+     * @param params
+     *            Action parameters.
+     * @param principal
+     *            Principal for user requesting action.
+     * @return Context.
+     */
+    public static PrincipalActionContext createPrincipalActionContext(final Serializable params,
+            final Principal principal)
+    {
+        return new PrincipalActionContext()
         {
             /** Fingerprint. */
             private static final long serialVersionUID = 8084060031869042700L;
@@ -104,7 +156,21 @@ public final class TestContextCreator
             {
                 return principal;
             }
-        }, new ArrayList<UserActionRequest>());
+        };
+    }
+
+    /**
+     * Creates a principal.
+     *
+     * @param userAccountId
+     *            User's account ID.
+     * @param userId
+     *            User's person ID.
+     * @return Principal.
+     */
+    public static Principal createPrincipal(final String userAccountId, final long userId)
+    {
+        return createPrincipal(userAccountId, userId, null);
     }
 
     /**
@@ -114,9 +180,11 @@ public final class TestContextCreator
      *            User's account ID.
      * @param userId
      *            User's person ID.
+     * @param openSocialId
+     *            User's OpenSocial ID.
      * @return Principal.
      */
-    public static Principal createPrincipal(final String userAccountId, final long userId)
+    public static Principal createPrincipal(final String userAccountId, final long userId, final String openSocialId)
     {
         return new Principal()
         {
@@ -138,7 +206,7 @@ public final class TestContextCreator
             @Override
             public String getOpenSocialId()
             {
-                return null;
+                return openSocialId;
             }
 
             @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010 Lockheed Martin Corporation
+ * Copyright (c) 2009-2011 Lockheed Martin Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import java.util.HashMap;
 
 import org.eurekastreams.commons.client.ui.WidgetCommand;
 import org.eurekastreams.server.domain.Page;
-import org.eurekastreams.server.domain.Person;
 import org.eurekastreams.server.search.modelview.AuthenticationType;
+import org.eurekastreams.server.search.modelview.PersonModelView;
 import org.eurekastreams.web.client.events.Observer;
 import org.eurekastreams.web.client.events.SwitchedHistoryViewEvent;
 import org.eurekastreams.web.client.history.CreateUrlRequest;
@@ -40,7 +40,7 @@ import com.google.gwt.user.client.ui.Widget;
 
 /**
  * HeaderComposite draws the header bar for the user.
- *
+ * 
  */
 public class HeaderComposite extends Composite
 {
@@ -71,7 +71,7 @@ public class HeaderComposite extends Composite
     /**
      * The Site Labing panel.
      */
-    FlowPanel siteLabeling = new FlowPanel();
+    FlowPanel siteLabelingContainer = new FlowPanel();
 
     /** The search box. */
     private final GlobalSearchComposite profileSearchBox = new GlobalSearchComposite("search profiles");
@@ -106,13 +106,14 @@ public class HeaderComposite extends Composite
                     }
                 }, true);
     }
+
     /**
      * Render the header.
-     *
+     * 
      * @param viewer
      *            - user to display.
      */
-    public void render(final Person viewer)
+    public void render(final PersonModelView viewer)
     {
         HorizontalULPanel userNav;
         FlowPanel panel = new FlowPanel();
@@ -139,7 +140,6 @@ public class HeaderComposite extends Composite
         myProfileLink.addStyleName("nav-bar-button");
         Hyperlink helpLink = new Hyperlink("Help", Session.getInstance().generateUrl(new CreateUrlRequest(Page.HELP)));
         helpLink.addStyleName("nav-bar-button");
-
 
         externalPageLinkPanel.add(externalLink);
         externalPageLinkPanel.addStyleName("external-header-button");
@@ -229,7 +229,7 @@ public class HeaderComposite extends Composite
         // Style the Elements
         panel.addStyleName("header-bar");
         navPanel.addStyleName("nav-bar");
-        siteLabeling.addStyleName("site-labeling");
+        siteLabelingContainer.addStyleName("site-labeling");
         mainNav.addStyleName("main-nav");
         userNav.addStyleName("user-bar");
 
@@ -238,26 +238,30 @@ public class HeaderComposite extends Composite
         navPanel.add(userNav);
         panel.add(navPanel);
 
-        panel.add(siteLabeling);
+        panel.add(siteLabelingContainer);
 
         initWidget(panel);
         setActive(Session.getInstance().getUrlPage());
     }
 
     /**
-     * Sets the Site labeling.
-     *
-     * @param siteLabelingTxt
-     *            The Text for the Site labeling.
+     * Sets Site labeling.
+     * 
+     * @param inTemplate
+     *            HTML template content to insert in the footer.
+     * @param inSiteLabel
+     *            The text for Site Labeling.
      */
-    public void setSiteLabel(final String siteLabelingTxt)
+    public void setSiteLabelTemplate(final String inTemplate, final String inSiteLabel)
     {
-        siteLabeling.getElement().setInnerHTML(siteLabelingTxt);
+        String siteLabel = inSiteLabel == null ? "" : inSiteLabel;
+        String template = inTemplate.replace("%SITELABEL%", siteLabel);
+        siteLabelingContainer.getElement().setInnerHTML(template);
     }
 
     /**
      * Set the top button as active.
-     *
+     * 
      * @param page
      *            the page to activate.
      */

@@ -29,6 +29,19 @@ Eureka.EventBus =
 }
 
 
+Eureka.BannerBar = function(img, color)
+{
+    this.img = img;
+    this.color = color;
+
+    this.getContainer = function()
+    {
+        return jQuery("<div style='background: url("+img+") no-repeat scroll left center "+color+"; height: 40px;'></div>");
+    }
+}
+
+
+
 Eureka.Container =
 {
     viewCount : 0,
@@ -280,13 +293,15 @@ Eureka.Form = function(titleText, callback)
     }
 }
 
-Eureka.SearchBar = function(callback)
+Eureka.SearchBar = function(callback, supressType)
 {
     this.container = jQuery("<div></div>");
+    this.callback = callback;
+    this.supressType = supressType;
 
     var input = jQuery("<input class='text-label' id='gadget-search' value='Search...' />");
     input.keyup(function(e) {
-        if(e.which == 13 || input.val().length > 2)
+        if(e.which == 13 || (input.val().length > 2 && supressType != true))
         {
             callback(input.val());
         }
@@ -370,6 +385,7 @@ Eureka.SearchBar = function(callback)
             resultsFor.detach();
             obj.detach();
             Eureka.resize();
+            jQuery('.app-container').removeClass('search-results-shown');
             input.val('Search...');
                     input.addClass('text-label');
         });
@@ -377,7 +393,7 @@ Eureka.SearchBar = function(callback)
 
         jQuery(".app-container").append(dim);
                 jQuery(".app-container").append(resultsFor);
-        jQuery(".app-container").append(obj);
+        jQuery(".app-container").append(obj).addClass('search-results-shown');
         var top = obj.css("top").replace(/px/,"");
         obj.css("height", obj.height()+parseInt(top));
         Eureka.resize();
@@ -603,8 +619,8 @@ Eureka.ListItem = function(itemCount, primaryName, byLine, metaData, obj, onClic
         {
             item.append("<span class='slide-arrow'>&gt;</span>");
             item.click(function() { if(!removeLink.is(":visible")) { Eureka.Container.switchView(obj); } if (onClick != null) { onClick(itemCount); }});
-            setTimeout(function() {
-                item.find('.slide-arrow').css('margin-top', -1 * (item.height() / 2) - 5);
+            setInterval(function() {
+                item.find('.slide-arrow').css('margin-top', -1 * (item.height() / 2) - 5).show();
             }, 250);
         }
         else
@@ -720,7 +736,7 @@ Eureka.Tab = function(name, tabContainer)
 {
     this.container = jQuery("<div class='tab'><div class='inner'>" + name + "</div></div>");
     
-    this.container.click(function() {tabContainer.switchToTab(name); Eureka.resize(); });
+    this.container.click(function() { jQuery('.slide-arrow').hide(); tabContainer.switchToTab(name); Eureka.resize(); });
      
     this.getContainer = function()
     {
@@ -934,7 +950,7 @@ Eureka.PostBox = function(text, postcb, maxlength, contentWarning)
 		input.css("width", jQuery("body").width() - 66);
 		var title = jQuery("<div class='title-bar collapsed search-bar'></div>");
 		title.css("border-top", "1px solid #BBB");
-    		title.append(jQuery("<div class='gadget-pre-search'></div>"));
+    		title.append(jQuery("<div class='gadget-pre-textbox'></div>"));
 		title.append(input);
 		title.append(jQuery("<div class='gadget-post-search'></div>"));
  		

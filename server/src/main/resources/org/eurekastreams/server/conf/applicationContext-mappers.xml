@@ -575,7 +575,6 @@
         </constructor-arg>
     </bean>
     
-    <!-- WBCTODO -->
     <!-- Mapper to get people ids by open social ids -->
     <bean id="getPeopleIdsByOpenSocialIdsMapper" class="org.eurekastreams.server.persistence.mappers.chained.DecoratedPartialResponseDomainMapper">
         <!-- Cache mapper -->
@@ -608,7 +607,6 @@
         </constructor-arg>
     </bean>
     
-    <!-- WBCTODO -->
     <!-- Mapper to get organization ids by short name -->
     <bean id="getOrganizationIdsByShortNamesMapper" class="org.eurekastreams.server.persistence.mappers.chained.DecoratedPartialResponseDomainMapper">
         <!-- Cache mapper -->
@@ -641,7 +639,6 @@
         </constructor-arg>
     </bean>
     
-    <!-- WBCTODO -->
     <!-- Mapper to get organization ids by short name -->
     <bean id="getDomainGroupIdsByShortNamesMapper" class="org.eurekastreams.server.persistence.mappers.chained.DecoratedPartialResponseDomainMapper">
         <!-- Cache mapper -->
@@ -779,13 +776,7 @@
 			</bean>
 		</constructor-arg>
 
-		<constructor-arg>
-			<!-- Database mapper to fall back on if not found in cache -->
-			<bean
-				class="org.eurekastreams.server.persistence.mappers.db.FindSystemSettingsDbDomainMapperImpl">
-				<property name="queryOptimizer" ref="queryOptimizer" />
-			</bean>
-		</constructor-arg>
+		<constructor-arg ref="findSystemSettingsFromDatabase" />
 
 		<!-- Results combiner:  return whichever is not null -->
 		<constructor-arg ref="nonNullResultsCombiner" />
@@ -802,6 +793,8 @@
 
 	<bean id="findSystemSettingsFromDatabase"
 		class="org.eurekastreams.server.persistence.mappers.db.FindSystemSettingsDbDomainMapperImpl">
+		<constructor-arg ref="headerContentTemplate" />
+		<constructor-arg ref="footerContentTemplate" />
 		<!--
 			Mapper to get the system settings straight from the database - needed
 			for updating it.
@@ -1778,6 +1771,7 @@
 				</entry>
 			</map>
 		</constructor-arg>		
+		<constructor-arg value="10000" />
 	</bean>
 
 	<bean
@@ -2436,6 +2430,8 @@
 
 	<!-- End ldap mappers -->
 	
+	<bean id="getPeopleSkillsByPeopleIdsDbMapper" class="org.eurekastreams.server.persistence.mappers.db.GetSkillsAndInterestsByEmployeeIdsDbMapper" />
+	
     <bean id="deleteOrganizationMapper" class="org.eurekastreams.server.persistence.mappers.db.DeleteOrganizationDbMapper" >
         <constructor-arg ref="findByIdMapper"/>
     </bean>
@@ -2463,6 +2459,8 @@
     <bean id="getPersonsByIdsDBMapper" class="org.eurekastreams.server.persistence.mappers.db.GetPersonsByIds">
         <constructor-arg ref="personQueryStrategy" />
         <constructor-arg ref="getRelatedOrganizationIdsByPersonId" />
+        <constructor-arg ref="getOrganizationsByIdsMapper" />
+        <constructor-arg ref="getPeopleSkillsByPeopleIdsDbMapper" />
     </bean>  
     
     <bean id="getGroupsByIdsDbMapper" class="org.eurekastreams.server.persistence.mappers.db.GetGroupsByIdsDbMapper">

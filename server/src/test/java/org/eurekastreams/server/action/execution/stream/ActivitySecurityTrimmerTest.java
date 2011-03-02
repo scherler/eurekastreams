@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -97,7 +97,7 @@ public class ActivitySecurityTrimmerTest
             {
                 allowing(getVisibleGroupsForUserMapper).execute(userId);
                 will(returnValue(new HashSet<Long>()));
-                
+
                 allowing(securityMapper).execute(with(any(List.class)));
                 will(returnValue(asdCollection));
 
@@ -106,17 +106,15 @@ public class ActivitySecurityTrimmerTest
 
                 allowing(asd).getExists();
                 will(returnValue(true));
-                
-                oneOf(asd).getId();
-                will(returnValue(activityId));
 
+                allowing(asd).getId();
+                will(returnValue(activityId));
             }
         });
-        
+
         Assert.assertEquals(1, sut.trim(Arrays.asList(activityId), userId).size());
         context.assertIsSatisfied();
     }
-
 
     /**
      * Test.
@@ -132,19 +130,22 @@ public class ActivitySecurityTrimmerTest
             {
                 allowing(getVisibleGroupsForUserMapper).execute(userId);
                 will(returnValue(new HashSet<Long>()));
-                
+
                 allowing(securityMapper).execute(with(any(List.class)));
                 will(returnValue(asdCollection));
 
                 allowing(asd).getExists();
                 will(returnValue(false));
+
+                allowing(asd).getId();
+                will(returnValue(activityId));
             }
         });
-        
+
         Assert.assertEquals(0, sut.trim(Arrays.asList(activityId), userId).size());
         context.assertIsSatisfied();
     }
-    
+
     /**
      * Test.
      */
@@ -174,12 +175,12 @@ public class ActivitySecurityTrimmerTest
 
                 allowing(asd).getExists();
                 will(returnValue(true));
-                
-                oneOf(asd).getId();
+
+                allowing(asd).getId();
                 will(returnValue(activityId));
             }
         });
-        
+
         Assert.assertEquals(1, sut.trim(Arrays.asList(activityId), userId).size());
         context.assertIsSatisfied();
     }
@@ -213,9 +214,12 @@ public class ActivitySecurityTrimmerTest
 
                 allowing(asd).getDestinationEntityId();
                 will(returnValue(destinationEntityId + 1));
+
+                allowing(asd).getId();
+                will(returnValue(activityId));
             }
         });
-        
+
         Assert.assertEquals(0, sut.trim(Arrays.asList(activityId), userId).size());
         context.assertIsSatisfied();
     }

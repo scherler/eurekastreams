@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010 Lockheed Martin Corporation
+ * Copyright (c) 2010-2011 Lockheed Martin Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,13 @@ package org.eurekastreams.web.client.ui.pages.profile.settings;
 
 import java.util.HashMap;
 
-import org.eurekastreams.server.domain.BackgroundItemType;
 import org.eurekastreams.server.domain.DomainFormatUtility;
 import org.eurekastreams.server.domain.EntityType;
 import org.eurekastreams.server.domain.Page;
 import org.eurekastreams.server.domain.Person;
+import org.eurekastreams.server.search.modelview.OrganizationModelView;
 import org.eurekastreams.server.search.modelview.PersonModelView;
+import org.eurekastreams.web.client.events.EventBus;
 import org.eurekastreams.web.client.events.Observer;
 import org.eurekastreams.web.client.events.SetBannerEvent;
 import org.eurekastreams.web.client.events.ShowNotificationEvent;
@@ -50,14 +51,13 @@ import com.google.gwt.user.client.ui.FlowPanel;
 
 /**
  * The Display for Personal Profile Settings Tab.
- *
  */
 public class PersonalProfileSettingsTabContent extends Composite
 {
     /**
      * The person.
      */
-    Person person;
+    PersonModelView person;
 
     /**
      * The Flow panel.
@@ -79,27 +79,26 @@ public class PersonalProfileSettingsTabContent extends Composite
      */
     public PersonalProfileSettingsTabContent()
     {
-
-        Session.getInstance().getEventBus().addObserver(GotPersonalInformationResponseEvent.class,
+        final EventBus eventBus = Session.getInstance().getEventBus();
+        eventBus.addObserver(GotPersonalInformationResponseEvent.class,
                 new Observer<GotPersonalInformationResponseEvent>()
                 {
                     public void update(final GotPersonalInformationResponseEvent event)
                     {
                         person = event.getResponse();
 
-                        Session.getInstance().getEventBus().notifyObservers(new SetBannerEvent(person));
+                        eventBus.notifyObservers(new SetBannerEvent(person));
 
                         final FormBuilder form = new FormBuilder("", PersonalInformationModel.getInstance(),
                                 Method.UPDATE);
 
-                        Session.getInstance().getEventBus().addObserver(UpdatedPersonalInformationResponseEvent.class,
+                        eventBus.addObserver(UpdatedPersonalInformationResponseEvent.class,
                                 new Observer<UpdatedPersonalInformationResponseEvent>()
                                 {
                                     public void update(final UpdatedPersonalInformationResponseEvent arg1)
                                     {
-                                        Session.getInstance().getEventBus().notifyObservers(
-                                                new ShowNotificationEvent(new Notification(
-                                                        "Your profile has been updated.")));
+                                        eventBus.notifyObservers(new ShowNotificationEvent(new Notification(
+                                                "Your profile has been updated.")));
                                         form.onSuccess();
                                     }
                                 });
@@ -107,19 +106,24 @@ public class PersonalProfileSettingsTabContent extends Composite
                         form.addFormElement(new ValueOnlyFormElement("accountId", person.getAccountId()));
 
                         form.addWidget(new AvatarUploadFormElement("Photo", "/eurekastreams/personavatarupload",
-                                Session.getInstance().getActionProcessor(), new AvatarUploadStrategy<Person>(person,
-                                        "resizePersonAvatar", EntityType.PERSON)));
+                                Session.getInstance().getActionProcessor(), new AvatarUploadStrategy<PersonModelView>(
+                                        person, "resizePersonAvatar", EntityType.PERSON)));
                         form.addFormDivider();
+
+                        // create OrgModelView from groupParentOrg
+                        OrganizationModelView parentOrgModelView = null;
+                        parentOrgModelView = new OrganizationModelView();
+                        parentOrgModelView.setName(person.getParentOrganizationName());
+                        parentOrgModelView.setShortName(person.getParentOrganizationShortName());
+                        parentOrgModelView.setEntityId(person.getParentOrganizationId());
 
                         form.addFormElement(new OrgLookupFormElement("Organization Affiliation",
                                 "Primary Organization",
                                 "Select the organization that you are most closely associated with.",
-                                "parentOrganization", "", true, Session.getInstance().getActionProcessor(), person
-                                        .getParentOrganization(), false));
+                                "parentOrganization", "", true, parentOrgModelView, false));
                         form.addFormElement(new MultiOrgLookupFormElement("", "Secondary Organization(s)",
                                 "Select the other organization(s) you actively support.", "relatedOrganizations",
-                                "Secondary", false, Session.getInstance().getActionProcessor(), person
-                                        .getRelatedOrganizations()));
+                                "Secondary", false, person.getRelatedOrganizations(), true));
                         form.addFormDivider();
 
                         form.addFormElement(new BasicTextBoxFormElement(MAX_LENGTH, false, "Title",
@@ -136,12 +140,8 @@ public class PersonalProfileSettingsTabContent extends Composite
                                 "Enter a brief description of your job responsibilities.", false));
                         form.addFormDivider();
 
-                        String skills = "";
-                        if (person.getBackground() != null)
-                        {
-                            skills = DomainFormatUtility.buildCapabilitiesString(person.getBackground()
-                                    .getBackgroundItems(BackgroundItemType.SKILL));
-                        }
+                        String skills = DomainFormatUtility.buildCapabilitiesStringFromStrings(person.getInterests());
+
                         form.addFormElement(new AutoCompleteItemDropDownFormElement("Interests",
                                 PersonModelView.SKILLS_KEY, skills,
                                 "Add keywords that describe your work experience, skills, interests, or "

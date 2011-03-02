@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010 Lockheed Martin Corporation
+ * Copyright (c) 2009-2011 Lockheed Martin Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import org.eurekastreams.commons.client.ActionRequestImpl;
 import org.eurekastreams.commons.exceptions.SessionException;
 import org.eurekastreams.server.domain.AvatarUrlGenerator;
 import org.eurekastreams.server.domain.EntityType;
-import org.eurekastreams.server.domain.Person;
 import org.eurekastreams.server.domain.TermsOfServiceDTO;
 import org.eurekastreams.server.domain.stream.StreamEntityDTO;
 import org.eurekastreams.server.search.modelview.PersonModelView;
@@ -66,6 +65,7 @@ import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.History;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.RootPanel;
+import com.google.gwt.user.client.Window;
 
 /**
  * Entry point classes define <code>onModuleLoad()</code>.
@@ -128,6 +128,14 @@ public class ApplicationEntryPoint implements EntryPoint
      */
     public void onModuleLoad()
     {
+        ResourceBundle.INSTANCE.coreCss().ensureInjected();
+        ResourceBundle.INSTANCE.yuiCss().ensureInjected();
+        
+        if (getUserAgent().contains("msie 7"))
+        {
+            ResourceBundle.INSTANCE.ieCss().ensureInjected();
+        }
+        
         session.setActionProcessor(processor);
         session.setEventBus(EventBus.getInstance());
         session.setPeriodicEventManager(new PeriodicEventManager(APP_IDLE_TIMEOUT, new TimerFactory(), processor));
@@ -148,8 +156,7 @@ public class ApplicationEntryPoint implements EntryPoint
             {
                 public void update(final FormLoginCompleteEvent event)
                 {
-                    loginDialog.setBgVisible(false);
-                    loadPerson();
+                    Window.Location.reload();
                 }
             });
 
@@ -213,8 +220,9 @@ public class ApplicationEntryPoint implements EntryPoint
 
                         if (caught instanceof SessionException)
                         {
-                            Dialog.showDialog(new MessageDialogContent("Unable to Establish Session",
-                            "Please Refresh."));
+                            Dialog
+                                    .showDialog(new MessageDialogContent("Unable to Establish Session",
+                                            "Please Refresh."));
                         }
                         else
                         {
@@ -232,12 +240,11 @@ public class ApplicationEntryPoint implements EntryPoint
                             return;
                         }
 
-                        Person result = new Person(resultMV);
                         session.setAuthenticationType(resultMV.getAuthenticationType());
-                        session.setCurrentPerson(result);
+                        session.setCurrentPerson(resultMV);
                         session.setCurrentPersonRoles(resultMV.getRoles());
-                        jSNIFacade.setViewer(result.getOpenSocialId(), result.getAccountId());
-                        jSNIFacade.setOwner(result.getOpenSocialId());
+                        jSNIFacade.setViewer(resultMV.getOpenSocialId(), resultMV.getAccountId());
+                        jSNIFacade.setOwner(resultMV.getOpenSocialId());
                         processor.setQueueRequests(true);
 
                         // create the StartTabs model before the event bus is buffered, so it's event wiring stays
@@ -328,10 +335,9 @@ public class ApplicationEntryPoint implements EntryPoint
     {
         return new Command()
         {
-
             public void execute()
             {
-                Person result = dialogContent.getPerson();
+                PersonModelView result = dialogContent.getPerson();
                 AvatarUrlGenerator urlGen = new AvatarUrlGenerator(EntityType.PERSON);
                 String imageUrl = urlGen.getSmallAvatarUrl(result.getId(), result.getAvatarId());
 
@@ -345,8 +351,7 @@ public class ApplicationEntryPoint implements EntryPoint
      */
     public static void launchEmployeeLookup()
     {
-        dialogContent = new EmployeeLookupContent(getEmployeeSelectedCommand(), Session.getInstance()
-                .getActionProcessor());
+        dialogContent = new EmployeeLookupContent(getEmployeeSelectedCommand());
         Dialog newDialog = new Dialog(dialogContent);
         newDialog.setBgVisible(true);
         newDialog.center();
@@ -522,4 +527,16 @@ public class ApplicationEntryPoint implements EntryPoint
                 });
         });
     }-*/;
+    
+    /**
+     * Get the user agent (for detecting IE7).
+     * 
+     * @return the user agent.
+     */
+    public static native String getUserAgent()
+    /*-{
+        return navigator.userAgent.toLowerCase();
+    }-*/;
+
+    
 }

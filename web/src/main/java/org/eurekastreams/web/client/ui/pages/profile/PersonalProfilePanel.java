@@ -17,11 +17,11 @@ package org.eurekastreams.web.client.ui.pages.profile;
 
 import org.eurekastreams.commons.client.ActionProcessor;
 import org.eurekastreams.server.action.request.profile.GetFollowersFollowingRequest;
-import org.eurekastreams.server.domain.BackgroundItemType;
 import org.eurekastreams.server.domain.EntityType;
 import org.eurekastreams.server.domain.Page;
-import org.eurekastreams.server.domain.Person;
+import org.eurekastreams.server.domain.stream.StreamScope;
 import org.eurekastreams.server.domain.stream.StreamScope.ScopeType;
+import org.eurekastreams.server.search.modelview.PersonModelView;
 import org.eurekastreams.web.client.events.EventBus;
 import org.eurekastreams.web.client.events.Observer;
 import org.eurekastreams.web.client.events.SetBannerEvent;
@@ -46,7 +46,6 @@ import org.eurekastreams.web.client.model.PersonalBiographyModel;
 import org.eurekastreams.web.client.model.PersonalEducationModel;
 import org.eurekastreams.web.client.model.PersonalEmploymentModel;
 import org.eurekastreams.web.client.model.PersonalInformationModel;
-import org.eurekastreams.web.client.model.PersonalStreamSettingsModel;
 import org.eurekastreams.web.client.ui.Session;
 import org.eurekastreams.web.client.ui.common.LeftBarPanel;
 import org.eurekastreams.web.client.ui.common.pagedlist.GroupRenderer;
@@ -89,7 +88,7 @@ public class PersonalProfilePanel extends FlowPanel
     /**
      * Gets current user in session.
      */
-    private final Person currentUser = Session.getInstance().getCurrentPerson();
+    private final PersonModelView currentUser = Session.getInstance().getCurrentPerson();
     /**
      * Holds the PortalPage section of the profile display.
      */
@@ -122,7 +121,7 @@ public class PersonalProfilePanel extends FlowPanel
     /**
      * The person whose profile we're looking at.
      */
-    private Person person;
+    private PersonModelView personModelView;
 
     /**
      * Followers.
@@ -132,7 +131,8 @@ public class PersonalProfilePanel extends FlowPanel
     /**
      * The panel that shows the checklist.
      */
-    private final ChecklistProgressBarPanel checklistPanel = new ChecklistProgressBarPanel("Employee Profile Checklist",
+    private final ChecklistProgressBarPanel checklistPanel = new ChecklistProgressBarPanel(
+            "Employee Profile Checklist",
             "Completing your profile is easy: upload your picture, enter your contact information, "
                     + "and add some work and personal related information. Employees that fill "
                     + "out their profile are more likely to be found by others across your organization.",
@@ -150,7 +150,7 @@ public class PersonalProfilePanel extends FlowPanel
 
     /**
      * Constructor.
-     *
+     * 
      * @param accountId
      *            the account id.
      */
@@ -199,21 +199,20 @@ public class PersonalProfilePanel extends FlowPanel
 
     /**
      * We have the Person, so set up the Profile summary.
-     *
+     * 
      * @param inPerson
      *            the person whose profile is being displayed
      */
-    public void setEntity(final Person inPerson)
+    public void setEntity(final PersonModelView inPerson)
     {
         ActionProcessor inProcessor = Session.getInstance().getActionProcessor();
         inProcessor.setQueueRequests(true);
 
-        person = inPerson;
-
-        if (person == null)
+        if (inPerson == null)
         {
             showInvalidPersonMessage();
         }
+        personModelView = inPerson;
 
         leftBarPanel.clear();
         portalPageContainer.clear();
@@ -221,22 +220,22 @@ public class PersonalProfilePanel extends FlowPanel
         // Set the banner.
         Session.getInstance().getEventBus().notifyObservers(new SetBannerEvent(inPerson));
 
-        if (person.getAccountId().equals(Session.getInstance().getCurrentPerson().getAccountId()))
+        if (personModelView.getAccountId().equals(Session.getInstance().getCurrentPerson().getAccountId()))
         {
             profileSettingsLink.removeStyleName("hidden");
             RootPanel.get().addStyleName("authenticated");
         }
 
-        breadCrumbPanel.setPerson(person);
+        breadCrumbPanel.setPerson(personModelView);
 
-        followers = person.getFollowersCount();
+        followers = personModelView.getFollowersCount();
 
         // Update the Profile summary
-        about.setPerson(person);
+        about.setPerson(personModelView);
         connectionsPanel = new ConnectionsPanel();
-        connectionsPanel.addConnection("Followers", null, person.getFollowersCount());
-        connectionsPanel.addConnection("Following", null, person.getFollowingCount(), "center");
-        connectionsPanel.addConnection("Groups", null, person.getGroupCount());
+        connectionsPanel.addConnection("Followers", null, personModelView.getFollowersCount());
+        connectionsPanel.addConnection("Following", null, personModelView.getFollowingCount(), "center");
+        connectionsPanel.addConnection("Groups", null, personModelView.getGroupsCount());
 
         Session.getInstance().getEventBus().addObserver(InsertedPersonFollowerResponseEvent.class,
                 new Observer<InsertedPersonFollowerResponseEvent>()
@@ -259,7 +258,7 @@ public class PersonalProfilePanel extends FlowPanel
                 });
 
         // Make the Connections Tab
-        final PagedListPanel connectionTabContent = createConnectionsTabContent(person);
+        final PagedListPanel connectionTabContent = createConnectionsTabContent(personModelView);
 
         // update the list of members after joining/leaving the group
         Observer<BaseDataResponseEvent<Integer>> followChangeObserver = new Observer<BaseDataResponseEvent<Integer>>()
@@ -279,34 +278,35 @@ public class PersonalProfilePanel extends FlowPanel
                 .addObserver(DeletedPersonFollowersResponseEvent.class, followChangeObserver);
 
         leftBarPanel.addChildWidget(about);
-        leftBarPanel.addChildWidget(new PopularHashtagsPanel(ScopeType.PERSON, person.getAccountId()));
+        leftBarPanel.addChildWidget(new PopularHashtagsPanel(ScopeType.PERSON, personModelView.getAccountId()));
         leftBarPanel.addChildWidget(connectionsPanel);
-        leftBarPanel.addChildWidget(new ContactInfoPanel(person));
+        leftBarPanel.addChildWidget(new ContactInfoPanel(personModelView));
 
-        if (person.getAccountId().equals(Session.getInstance().getCurrentPerson().getAccountId()))
+        if (personModelView.getAccountId().equals(Session.getInstance().getCurrentPerson().getAccountId()))
         {
             setUpChecklist();
         }
 
         final StreamPanel streamContent = new StreamPanel(false);
-        streamContent.setStreamScope(person.getStreamScope(),
-                (person.isStreamPostable() || (currentUser.getAccountId() == person.getAccountId())));
+        streamContent.setStreamScope(new StreamScope(ScopeType.PERSON, personModelView.getAccountId(), personModelView
+                .getStreamId()), (personModelView.isStreamPostable() || (currentUser.getAccountId() == personModelView
+                .getAccountId())));
 
-        if (person.isAccountLocked())
+        if (personModelView.isAccountLocked())
         {
             streamContent.setLockedMessagePanel(generateLockedUserMessage());
         }
 
-        String jsonRequest = StreamJsonRequestFactory.addRecipient(EntityType.PERSON, person.getAccountId(),
+        String jsonRequest = StreamJsonRequestFactory.addRecipient(EntityType.PERSON, personModelView.getAccountId(),
                 StreamJsonRequestFactory.getEmptyRequest()).toString();
 
-        EventBus.getInstance().notifyObservers(new StreamRequestEvent(person.getDisplayName(), jsonRequest));
+        EventBus.getInstance().notifyObservers(new StreamRequestEvent(personModelView.getDisplayName(), jsonRequest));
 
         portalPage = new TabContainerPanel();
 
         portalPage.addTab(new SimpleTab("Stream", streamContent));
         portalPage.addTab(new SimpleTab("Connections", connectionTabContent));
-        portalPage.addTab(new SimpleTab("About", new PersonalProfileAboutTabPanel(person)));
+        portalPage.addTab(new SimpleTab("About", new PersonalProfileAboutTabPanel(personModelView)));
         portalPage.init();
 
         portalPage.setStyleName("profile-gadgets-container");
@@ -319,7 +319,7 @@ public class PersonalProfilePanel extends FlowPanel
 
     /**
      * Generates a panel to use as the message when a user is locked out of the system.
-     *
+     * 
      * @return the Panel content containing the locked message.
      */
     private Panel generateLockedUserMessage()
@@ -366,10 +366,10 @@ public class PersonalProfilePanel extends FlowPanel
         msgHeader.addStyleName("warning-message");
 
         Hyperlink directoryLink = new Hyperlink("profiles", Session.getInstance().generateUrl(
-            new CreateUrlRequest(Page.ORGANIZATIONS, "")));
+                new CreateUrlRequest(Page.ORGANIZATIONS, "")));
         Label msgText1 = new Label("The person you were looking for could not be found. Try browsing the  ");
         Label msgText2 = new Label(
-            " or searching the profiles by entering the name in the \"search profiles\" box above.");
+                " or searching the profiles by entering the name in the \"search profiles\" box above.");
 
         FlowPanel msgText = new FlowPanel();
         msgText.add(msgText1);
@@ -383,7 +383,7 @@ public class PersonalProfilePanel extends FlowPanel
 
     /**
      * Creates a new error report box and centers it on the page.
-     *
+     * 
      * @return The error report box, ready to have content added to it.
      */
     private Panel addNewCenteredErrorBox()
@@ -400,7 +400,6 @@ public class PersonalProfilePanel extends FlowPanel
 
         return errorReport;
     }
-                                                                                                                    
 
     /**
      * Set up the checklist.
@@ -413,10 +412,9 @@ public class PersonalProfilePanel extends FlowPanel
 
         checklistPanel.addTask(new Task("Basic Information",
                 "Upload your picture, share a list of your skills and interests, provide a description of what you "
-                        + "do, and add your contact information."), (person.getAvatarId() != null
-                && person.getJobDescription() != null && person.getBackground() != null && person.getBackground()
-                .getBackgroundItems(BackgroundItemType.SKILL) != null)
-                && person.getBackground().getBackgroundItems(BackgroundItemType.SKILL).size() > 0);
+                        + "do, and add your contact information."), personModelView.getAvatarId() != null
+                && personModelView.getJobDescription() != null && personModelView.getInterests() != null
+                && personModelView.getInterests().size() > 0);
 
         final Task biographyTask = new Task("Biography", "Provide an overview of your professional background.",
                 "Work History & Education");
@@ -467,22 +465,21 @@ public class PersonalProfilePanel extends FlowPanel
                 });
 
         Session.getInstance().getActionProcessor().setQueueRequests(true);
-        PersonalBiographyModel.getInstance().fetch(person.getAccountId(), true);
-        PersonalEducationModel.getInstance().fetch(person.getId(), true);
-        PersonalEmploymentModel.getInstance().fetch(person.getId(), true);
-        PersonalStreamSettingsModel.getInstance().fetch(person.getAccountId(), true);
+        PersonalBiographyModel.getInstance().fetch(personModelView.getAccountId(), true);
+        PersonalEducationModel.getInstance().fetch(personModelView.getId(), true);
+        PersonalEmploymentModel.getInstance().fetch(personModelView.getId(), true);
         Session.getInstance().getActionProcessor().setQueueRequests(false);
         Session.getInstance().getActionProcessor().fireQueuedRequests();
     }
 
     /**
      * Creates and sets up the connections tab content.
-     *
+     * 
      * @param inPerson
      *            Person whose profile is being displayed.
      * @return Tab content.
      */
-    private PagedListPanel createConnectionsTabContent(final Person inPerson)
+    private PagedListPanel createConnectionsTabContent(final PersonModelView inPerson)
     {
         final PagedListPanel connectionTabContent = new PagedListPanel("connections");
 

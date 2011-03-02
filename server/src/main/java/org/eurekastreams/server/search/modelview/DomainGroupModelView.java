@@ -16,17 +16,21 @@
 package org.eurekastreams.server.search.modelview;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import org.eurekastreams.commons.search.modelview.ModelView;
 import org.eurekastreams.server.domain.ActivityRestrictionEntity;
+import org.eurekastreams.server.domain.AvatarEntity;
 import org.eurekastreams.server.domain.BackgroundItem;
+import org.eurekastreams.server.domain.Bannerable;
 import org.eurekastreams.server.domain.Followable;
 
 /**
  * ModelView for DomainGroup.
  */
-public class DomainGroupModelView extends ModelView implements Followable, ActivityRestrictionEntity
+public class DomainGroupModelView extends ModelView implements Followable, ActivityRestrictionEntity, Bannerable,
+        AvatarEntity
 {
     /**
      * The serial version id.
@@ -145,9 +149,29 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
     private String avatarId = UNINITIALIZED_STRING_VALUE;
 
     /**
+     * Avatar crop size.
+     */
+    private Integer avatarCropSize = null;
+
+    /**
+     * Avatar crop value x.
+     */
+    private Integer avatarCropX = null;
+
+    /**
+     * Avatar crop value y.
+     */
+    private Integer avatarCropY = null;
+
+    /**
      * If the group is public.
      */
     private Boolean isPublic = false;
+
+    /**
+     * Flag for restricted access.
+     */
+    private Boolean restricted = true;
 
     /**
      * The account id of the person that created this group.
@@ -181,8 +205,53 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
     private boolean streamPostable = true;
 
     /**
+     * If group is pending approval.
+     */
+    private boolean isPending = false;
+
+    /**
+     * Banner id.
+     */
+    private String bannerId = null;
+
+    /**
+     * The organization url.
+     */
+    private String url = null;
+
+    /**
+     * Group overview.
+     */
+    private String overview = null;
+
+    /**
+     * Banner entityId.
+     */
+    private Long bannerEntityId = UNINITIALIZED_LONG_VALUE;
+
+    /**
+     * Org coordinator personModelViews.
+     */
+    private List<PersonModelView> coordinators;
+
+    /**
+     * List of capability names.
+     */
+    private List<String> capabilities;
+
+    /**
+     * Suppresses notifications to group coordinators when new activities are posted.
+     */
+    private boolean suppressPostNotifToCoordinator;
+
+    /**
+     * Suppresses notifications to group members when new activities are posted.
+     */
+    private boolean suppressPostNotifToMember;
+
+    /**
      * Load this object's properties from the input Map.
-     *
+     * 
      * @param properties
      *            the Map of the properties to load
      */
@@ -199,6 +268,18 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
         if (properties.containsKey("avatarId"))
         {
             setAvatarId((String) properties.get("avatarId"));
+        }
+        if (properties.containsKey("avatarCropSize"))
+        {
+            setAvatarCropSize((Integer) properties.get("avatarCropSize"));
+        }
+        if (properties.containsKey("avatarCropX"))
+        {
+            setAvatarCropX((Integer) properties.get("avatarCropX"));
+        }
+        if (properties.containsKey("avatarCropY"))
+        {
+            setAvatarCropY((Integer) properties.get("avatarCropY"));
         }
         if (properties.containsKey("parentOrganizationId"))
         {
@@ -260,11 +341,35 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
         {
             setStreamPostable((Boolean) properties.get("streamPostable"));
         }
+        if (properties.containsKey("isPending"))
+        {
+            setStreamPostable((Boolean) properties.get("isPending"));
+        }
+        if (properties.containsKey("bannerId"))
+        {
+            setBannerId((String) properties.get("bannerId"));
+        }
+        if (properties.containsKey("url"))
+        {
+            setUrl((String) properties.get("url"));
+        }
+        if (properties.containsKey("overview"))
+        {
+            setOverview((String) properties.get("overview"));
+        }
+        if (properties.containsKey("suppressPostNotifToCoordinator"))
+        {
+            setSuppressPostNotifToCoordinator((Boolean) properties.get("suppressPostNotifToCoordinator"));
+        }
+        if (properties.containsKey("suppressPostNotifToMember"))
+        {
+            setSuppressPostNotifToMember((Boolean) properties.get("suppressPostNotifToMember"));
+        }
     }
 
     /**
      * Sets is public.
-     *
+     * 
      * @param inIsPublic
      *            sets isPublic.
      */
@@ -283,7 +388,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * Get the entity name.
-     *
+     * 
      * @return the entity name
      */
     @Override
@@ -294,7 +399,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * Get the group's avatar id.
-     *
+     * 
      * @return the avatarId
      */
     public String getAvatarId()
@@ -304,7 +409,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * Set the group's avatar id.
-     *
+     * 
      * @param inAvatarId
      *            the avatarId to set
      */
@@ -315,7 +420,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * Get the number of people following this group.
-     *
+     * 
      * @return the followersCount
      */
     public int getFollowersCount()
@@ -325,7 +430,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * Set the number of people following this group.
-     *
+     * 
      * @param inFollowersCount
      *            the followersCount to set
      */
@@ -336,7 +441,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * The the number of updates for this group.
-     *
+     * 
      * @return the updatesCount
      */
     public int getUpdatesCount()
@@ -346,7 +451,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * Set the number of updates for this group.
-     *
+     * 
      * @param inUpdatesCount
      *            the updatesCount to set
      */
@@ -357,7 +462,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * Get the shortname.
-     *
+     * 
      * @return the shortname.
      */
     public String getShortName()
@@ -367,7 +472,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * Set the shortname.
-     *
+     * 
      * @param inShortName
      *            the shortname.
      */
@@ -378,7 +483,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * Get the name of the group.
-     *
+     * 
      * @return the name of the group
      */
     public String getName()
@@ -388,7 +493,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * Set the name of the group.
-     *
+     * 
      * @param inName
      *            the name to set
      */
@@ -399,7 +504,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * Get the description of the group.
-     *
+     * 
      * @return the description
      */
     public String getDescription()
@@ -409,7 +514,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * Set the description of the group.
-     *
+     * 
      * @param inDescription
      *            the description to set
      */
@@ -420,7 +525,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * Get the date the group was added to the system.
-     *
+     * 
      * @return the dateAdded
      */
     public Date getDateAdded()
@@ -430,7 +535,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * Set the date the group was added to the system.
-     *
+     * 
      * @param inDateAdded
      *            the dateAdded to set
      */
@@ -458,7 +563,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * Get the group's parent organization's short name.
-     *
+     * 
      * @return the parentOrganizationShortName
      */
     public String getParentOrganizationShortName()
@@ -468,7 +573,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * Set the group's parent organization's short name.
-     *
+     * 
      * @param inParentOrganizationShortName
      *            the parentOrganizationShortName to set
      */
@@ -479,7 +584,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * Get the group's parent organization's name.
-     *
+     * 
      * @return the parentOrganizationName
      */
     public String getParentOrganizationName()
@@ -489,7 +594,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * Set the group's parent organization's name.
-     *
+     * 
      * @param inParentOrganizationName
      *            the parentOrganizationName to set
      */
@@ -499,7 +604,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
     }
 
     /**
-     *
+     * 
      * @return the person created by display name.
      */
     public String getPersonCreatedByDisplayName()
@@ -534,7 +639,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * This is only available on the server and is not serialized and sent over the wire.
-     *
+     * 
      * @param inPersonCreatedById
      *            The person created by id.
      */
@@ -554,7 +659,7 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
 
     /**
      * Set the entity id.
-     *
+     * 
      * @param inEntityId
      *            the entity id of the domain group.
      */
@@ -633,4 +738,216 @@ public class DomainGroupModelView extends ModelView implements Followable, Activ
     {
         return shortName;
     }
+
+    /**
+     * @return the isPending
+     */
+    public boolean isPending()
+    {
+        return isPending;
+    }
+
+    /**
+     * @param inIsPending
+     *            the isPending to set
+     */
+    public void setPending(final boolean inIsPending)
+    {
+        isPending = inIsPending;
+    }
+
+    @Override
+    public Long getBannerEntityId()
+    {
+        return bannerEntityId;
+    }
+
+    @Override
+    public String getBannerId()
+    {
+        return bannerId;
+    }
+
+    @Override
+    public void setBannerEntityId(final Long inBannerEntityId)
+    {
+        bannerEntityId = inBannerEntityId;
+    }
+
+    @Override
+    public void setBannerId(final String inBannerId)
+    {
+        bannerId = inBannerId;
+    }
+
+    /**
+     * @return the url
+     */
+    public String getUrl()
+    {
+        return url;
+    }
+
+    /**
+     * @param inUrl
+     *            the url to set
+     */
+    public void setUrl(final String inUrl)
+    {
+        url = inUrl;
+    }
+
+    /**
+     * @return the coordinators
+     */
+    public List<PersonModelView> getCoordinators()
+    {
+        return coordinators;
+    }
+
+    /**
+     * @param inCoordinators
+     *            the coordinators to set
+     */
+    public void setCoordinators(final List<PersonModelView> inCoordinators)
+    {
+        coordinators = inCoordinators;
+    }
+
+    /**
+     * @return the overview
+     */
+    public String getOverview()
+    {
+        return overview;
+    }
+
+    /**
+     * @param inOverview
+     *            the overview to set
+     */
+    public void setOverview(final String inOverview)
+    {
+        overview = inOverview;
+    }
+
+    /**
+     * @return the restricted
+     */
+    public Boolean isRestricted()
+    {
+        return restricted;
+    }
+
+    /**
+     * @param inRestricted
+     *            the restricted to set
+     */
+    public void setRestricted(final Boolean inRestricted)
+    {
+        restricted = inRestricted;
+    }
+
+    /**
+     * @return the capabilities
+     */
+    public List<String> getCapabilities()
+    {
+        return capabilities;
+    }
+
+    /**
+     * @param inCapabilities
+     *            the capabilities to set
+     */
+    public void setCapabilities(final List<String> inCapabilities)
+    {
+        capabilities = inCapabilities;
+    }
+
+    /**
+     * @return the avatarCropSize
+     */
+    public Integer getAvatarCropSize()
+    {
+        return avatarCropSize;
+    }
+
+    /**
+     * @param inAvatarCropSize
+     *            the avatarCropSize to set
+     */
+    public void setAvatarCropSize(final Integer inAvatarCropSize)
+    {
+        avatarCropSize = inAvatarCropSize;
+    }
+
+    /**
+     * @return the avatarCropX
+     */
+    public Integer getAvatarCropX()
+    {
+        return avatarCropX;
+    }
+
+    /**
+     * @param inAvatarCropX
+     *            the avatarCropX to set
+     */
+    public void setAvatarCropX(final Integer inAvatarCropX)
+    {
+        avatarCropX = inAvatarCropX;
+    }
+
+    /**
+     * @return the avatarCropY
+     */
+    public Integer getAvatarCropY()
+    {
+        return avatarCropY;
+    }
+
+    /**
+     * @param inAvatarCropY
+     *            the avatarCropY to set
+     */
+    public void setAvatarCropY(final Integer inAvatarCropY)
+    {
+        avatarCropY = inAvatarCropY;
+    }
+
+    /**
+     * @return the suppressPostNotifToCoordinator
+     */
+    public boolean isSuppressPostNotifToCoordinator()
+    {
+        return suppressPostNotifToCoordinator;
+    }
+
+    /**
+     * @param inSuppressPostNotifToCoordinator
+     *            the suppressPostNotifToCoordinator to set
+     */
+    public void setSuppressPostNotifToCoordinator(final boolean inSuppressPostNotifToCoordinator)
+    {
+        suppressPostNotifToCoordinator = inSuppressPostNotifToCoordinator;
+    }
+
+    /**
+     * @return the suppressPostNotifToMember
+     */
+    public boolean isSuppressPostNotifToMember()
+    {
+        return suppressPostNotifToMember;
+    }
+
+    /**
+     * @param inSuppressPostNotifToMember
+     *            the suppressPostNotifToMember to set
+     */
+    public void setSuppressPostNotifToMember(final boolean inSuppressPostNotifToMember)
+    {
+        suppressPostNotifToMember = inSuppressPostNotifToMember;
+    }
+
 }
